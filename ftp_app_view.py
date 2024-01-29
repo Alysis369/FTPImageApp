@@ -1,6 +1,10 @@
+import queue
+
 import customtkinter as ctk
 from tkinter import filedialog
 import datetime
+import time
+import threading
 
 
 class ftp_app_view(ctk.CTk):
@@ -12,6 +16,7 @@ class ftp_app_view(ctk.CTk):
         self.grid_rowconfigure((0), weight=0)
 
         # attributes
+        # TODO: Move app model props to another class
         self.start_dt = ctk.StringVar(value=str(datetime.datetime.now()))
         self.end_dt = ctk.StringVar(value=str(datetime.datetime.now()))
         self.line = ctk.StringVar()
@@ -21,6 +26,13 @@ class ftp_app_view(ctk.CTk):
         self.camera = ctk.StringVar()
         self.inspection = ctk.StringVar()
         self.quality = ctk.StringVar()
+        self.reject = ctk.StringVar()
+        self.progress_queue = queue.Queue()
+
+        # in-app attributes
+        self.progress = ctk.DoubleVar(value=0.0)
+        self.status = ctk.StringVar()
+
 
         # add attribute traces
         self.eq.trace_add('write', self._trace_eq_write)
@@ -39,6 +51,7 @@ class ftp_app_view(ctk.CTk):
         self._create_eq_frame().grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky='nsew')
         self._create_directory_frame().grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky='nsew')
         self._create_imgpull_tabview().grid(row=3, column=0, columnspan=2, padx=10, pady=(0, 5), sticky='nsew')
+        self._create_submit_frame().grid(row=4, column=0, columnspan=2, padx=10, pady=(0, 5), sticky='nsew')
 
     def _create_datetime_frame(self) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(master=self)
@@ -101,18 +114,26 @@ class ftp_app_view(ctk.CTk):
         tab_bd = tabview.add('Bd')
         tab_vv = tabview.add('VV')
 
-        self._create_gd_bd_frame(tab_gd).pack(side='left')
-        self._create_gd_bd_frame(tab_bd).pack(side='left')
+        self._create_gd_frame(tab_gd).pack(side='left', fill='x')
+        self._create_bd_frame(tab_bd).pack(side='left', fill='x')
 
         return tabview
 
     # noinspection PyTypeChecker
-    def _create_gd_bd_frame(self, master=None) -> ctk.CTkFrame:
+    def _create_gd_frame(self, master=None) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(master if master else self)
 
-        self._create_cam_frame(master=frame).pack(side='left', padx=5)
-        self._create_insp_frame(master=frame).pack(side='left', padx=5)
+        self._create_cam_frame(master=frame).grid(row=0, column=0, padx=5, pady=(0,5))
+        self._create_insp_frame(master=frame).grid(row=0, column=1, padx=5, pady=(0,5))
 
+        return frame
+
+    def _create_bd_frame(self, master=None) -> ctk.CTkFrame:
+        frame = ctk.CTkFrame(master if master else self)
+
+        self._create_cam_frame(master=frame).grid(row=0, column=0, padx=5, pady=(0,5))
+        self._create_insp_frame(master=frame).grid(row=0, column=1, padx=5, pady=(0,5))
+        self._create_reject_frame(master=frame).grid(row=1, column=0, columnspan=2, padx=5, sticky='ew')
         return frame
 
     # noinspection PyTypeChecker
@@ -162,8 +183,37 @@ class ftp_app_view(ctk.CTk):
 
         return frame
 
+    def _create_reject_frame(self, master=None) -> ctk.CTkFrame:
+        # TODO: pull eq data from DB
+        reject_data = ['', 'Hat', 'Mustache', 'Clothes']
+
+        frame = ctk.CTkFrame(master if master else self)
+
+        rej_label = ctk.CTkLabel(frame, text='Reject: ')
+        rej_om = ctk.CTkOptionMenu(frame, dynamic_resizing=False, variable=self.reject, values=reject_data)
+        rej_name_label = ctk.CTkLabel(frame, textvariable=self.reject)
+
+        rej_label.pack(side='left', padx=10, pady=10)
+        rej_om.pack(side='left', padx=10, pady=10, fill='x')
+        rej_name_label.pack(side='bottom', padx=10, pady=10)
+
+        return frame
+
     def _create_vv_frame(self, master=None) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(master if master else self)
+
+    def _create_submit_frame(self) -> ctk.CTkFrame:
+        frame = ctk.CTkFrame(self)
+
+        submit_button = ctk.CTkButton(frame, width=10, text='Run', command=lambda: self.__run_main_thread(submit_button))
+        status_label = ctk.CTkLabel(frame, width=400, textvariable=self.status)
+        progress_pb = ctk.CTkProgressBar(frame, variable=self.progress)
+
+        submit_button.grid(row=0, column=0, padx=5, pady=5)
+        status_label.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky='ew')
+        progress_pb.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky='ew')
+
+        return frame
 
     def __select_home_dir(self, *args):
         self.home_dir.set(filedialog.askdirectory())
@@ -190,3 +240,33 @@ class ftp_app_view(ctk.CTk):
         self.inspection.set('')
         self.__cam_rb_select.set('Any')
         self.__insp_rb_select.set('Any')
+
+    def __run_main_thread(self, run_button):
+        # print(f'start_dt: {self.start_dt.get()}\n'
+        #       f'end_dt: ')
+        # self.start_dt = ctk.StringVar(value=str(datetime.datetime.now()))
+        # self.end_dt = ctk.StringVar(value=str(datetime.datetime.now()))
+        # self.line = ctk.StringVar()
+        # self.eq = ctk.StringVar()
+        # self.eq_num = ctk.StringVar()
+        # self.home_dir = ctk.StringVar()
+        # self.camera = ctk.StringVar()
+        # self.inspection = ctk.StringVar()
+        # self.quality = ctk.StringVar()
+        # self.reject = ctk.StringVar()
+
+        run_button.configure(state='disabled')
+        self.status.set('verrrrrrryyyyyyyyyyyyyyLOOOOOOONGGGGTEEEEEXXXTTTT')
+        # self.progress_thread = threading.Thread(target=self.__run_main)
+        # self.progress_thread.start()
+
+        # if self.thread.is_alive():
+        #     self.after(100, self.periodiccall)
+
+        # run_button.configure(state='enabled')
+
+    # def __check_progress_queue(self):
+    # def __run_main(self):
+    #     # run the main function here
+    #     self.thread = StatusThreadClient(self.progress_queue)
+    #     self.thread.start()
