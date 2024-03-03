@@ -1,14 +1,9 @@
-import queue
-
 import customtkinter as ctk
 from tkinter import filedialog
 import datetime
-import time
-import threading
-
 
 class ftp_app_view(ctk.CTk):
-    def __init__(self):
+    def __init__(self, status_queue, job_queue):
         super().__init__()
         self.geometry("800*600")
         self.title("FTP Image Pull App")
@@ -27,7 +22,10 @@ class ftp_app_view(ctk.CTk):
         self.inspection = ctk.StringVar()
         self.quality = ctk.StringVar()
         self.reject = ctk.StringVar()
-        self.progress_queue = queue.Queue()
+
+        # threading queues
+        self.status_queue = status_queue
+        self.job_queue = job_queue
 
         # in-app attributes
         self.progress = ctk.DoubleVar(value=0.0)
@@ -242,31 +240,4 @@ class ftp_app_view(ctk.CTk):
         self.__insp_rb_select.set('Any')
 
     def __run_main_thread(self, run_button):
-        # print(f'start_dt: {self.start_dt.get()}\n'
-        #       f'end_dt: ')
-        # self.start_dt = ctk.StringVar(value=str(datetime.datetime.now()))
-        # self.end_dt = ctk.StringVar(value=str(datetime.datetime.now()))
-        # self.line = ctk.StringVar()
-        # self.eq = ctk.StringVar()
-        # self.eq_num = ctk.StringVar()
-        # self.home_dir = ctk.StringVar()
-        # self.camera = ctk.StringVar()
-        # self.inspection = ctk.StringVar()
-        # self.quality = ctk.StringVar()
-        # self.reject = ctk.StringVar()
-
-        run_button.configure(state='disabled')
-        self.status.set('verrrrrrryyyyyyyyyyyyyyLOOOOOOONGGGGTEEEEEXXXTTTT')
-        # self.progress_thread = threading.Thread(target=self.__run_main)
-        # self.progress_thread.start()
-
-        # if self.thread.is_alive():
-        #     self.after(100, self.periodiccall)
-
-        # run_button.configure(state='enabled')
-
-    # def __check_progress_queue(self):
-    # def __run_main(self):
-    #     # run the main function here
-    #     self.thread = StatusThreadClient(self.progress_queue)
-    #     self.thread.start()
+        pass
