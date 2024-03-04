@@ -1,6 +1,10 @@
+import threading
+
 import customtkinter as ctk
 from tkinter import filedialog
 import datetime
+import queue
+
 
 class ftp_app_view(ctk.CTk):
     def __init__(self, status_queue, job_queue):
@@ -27,21 +31,40 @@ class ftp_app_view(ctk.CTk):
         self.status_queue = status_queue
         self.job_queue = job_queue
 
+        # threads
+        self._sentinel = object()
+        self._job_sentinel = None
+        self.status_thread = threading.Thread(target=self.__status_thread_main)
+
         # in-app attributes
         self.progress = ctk.DoubleVar(value=0.0)
         self.status = ctk.StringVar()
 
-
         # add attribute traces
         self.eq.trace_add('write', self._trace_eq_write)
+        self.protocol("WM_DELETE_WINDOW", self._shutdown)
 
         # pack frames
+        self._start_threads()
         self._pack_frames()
 
     def _trace_eq_write(self, *args):
         # TODO: replace eq_num_dict with DB
         eq_num_dict = {'': '', 'Mario': 'Red hair dude', 'Luigi': 'Green hair bro'}
         self.eq_num.set(eq_num_dict[self.eq.get()])
+
+    def _start_threads(self):
+        self.status_thread.start()
+
+    def _shutdown(self):
+        # send sentinels to threads
+        self.status_queue.put(self._sentinel)
+
+        # wait on thread death
+        self.status_thread.join()
+
+        # kill App
+        self.destroy()
 
     def _pack_frames(self):
         self._create_datetime_frame().grid(row=0, column=0, padx=10, pady=(10, 5), sticky='nsew')
@@ -121,16 +144,16 @@ class ftp_app_view(ctk.CTk):
     def _create_gd_frame(self, master=None) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(master if master else self)
 
-        self._create_cam_frame(master=frame).grid(row=0, column=0, padx=5, pady=(0,5))
-        self._create_insp_frame(master=frame).grid(row=0, column=1, padx=5, pady=(0,5))
+        self._create_cam_frame(master=frame).grid(row=0, column=0, padx=5, pady=(0, 5))
+        self._create_insp_frame(master=frame).grid(row=0, column=1, padx=5, pady=(0, 5))
 
         return frame
 
     def _create_bd_frame(self, master=None) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(master if master else self)
 
-        self._create_cam_frame(master=frame).grid(row=0, column=0, padx=5, pady=(0,5))
-        self._create_insp_frame(master=frame).grid(row=0, column=1, padx=5, pady=(0,5))
+        self._create_cam_frame(master=frame).grid(row=0, column=0, padx=5, pady=(0, 5))
+        self._create_insp_frame(master=frame).grid(row=0, column=1, padx=5, pady=(0, 5))
         self._create_reject_frame(master=frame).grid(row=1, column=0, columnspan=2, padx=5, sticky='ew')
         return frame
 
@@ -141,7 +164,8 @@ class ftp_app_view(ctk.CTk):
 
         cam_label = ctk.CTkLabel(frame, text='Camera: ')
         cam_rb_any = ctk.CTkRadioButton(frame, variable=self.__cam_rb_select, text='Any', value='Any')
-        cam_rb_spec = ctk.CTkRadioButton(frame, variable=self.__cam_rb_select, text='Specific (ex. C4)', value='Specific')
+        cam_rb_spec = ctk.CTkRadioButton(frame, variable=self.__cam_rb_select, text='Specific (ex. C4)',
+                                         value='Specific')
         cam_entry = ctk.CTkEntry(master=frame, textvariable=self.camera, state="disabled", fg_color='grey')
 
         # add trace
@@ -200,14 +224,16 @@ class ftp_app_view(ctk.CTk):
     def _create_vv_frame(self, master=None) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(master if master else self)
 
+        return frame
+
     def _create_submit_frame(self) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(self)
 
-        submit_button = ctk.CTkButton(frame, width=10, text='Run', command=lambda: self.__run_main_thread(submit_button))
+        self.submit_button = ctk.CTkButton(frame, width=10, text='Run', command=self.__run_job)
         status_label = ctk.CTkLabel(frame, width=400, textvariable=self.status)
         progress_pb = ctk.CTkProgressBar(frame, variable=self.progress)
 
-        submit_button.grid(row=0, column=0, padx=5, pady=5)
+        self.submit_button.grid(row=0, column=0, padx=5, pady=5)
         status_label.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky='ew')
         progress_pb.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky='ew')
 
@@ -239,5 +265,34 @@ class ftp_app_view(ctk.CTk):
         self.__cam_rb_select.set('Any')
         self.__insp_rb_select.set('Any')
 
-    def __run_main_thread(self, run_button):
-        pass
+    def __run_job(self):
+        self.submit_button.configure(state='disabled')  # disable button
+
+        # create and put job
+        self._job_sentinel = object()
+        self.status_queue.put('Starting first job!')
+        self.job_queue.put({'job': 'FIRST JOB', 'sentinel': self._job_sentinel})
+
+        # release button
+        # run_button.configure(state='normal')
+
+    def __status_thread_main(self):
+        # poll status_q
+        while True:
+            try:
+                status = self.status_queue.get(timeout=0.1)
+                if status is self._job_sentinel:
+                    # A job is completed
+                    self._job_sentinel = None
+                    status = 'Job Finished!'
+                    self.submit_button.configure(state='normal')
+
+                if status is self._sentinel:
+                    # kill thread
+                    break
+
+                print(status)
+                self.status.set(status)
+
+            except queue.Empty:
+                continue
