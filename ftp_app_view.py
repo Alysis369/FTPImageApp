@@ -38,6 +38,7 @@ class ftp_app_view(ctk.CTk):
 
         # in-app attributes
         self.progress = ctk.DoubleVar(value=0.0)
+        self.curr_job_size, self.curr_completed_job = 1, 0
         self.status = ctk.StringVar()
 
         # add attribute traces
@@ -57,6 +58,10 @@ class ftp_app_view(ctk.CTk):
         self.status_thread.start()
 
     def _shutdown(self):
+        # clear queue
+        with self.status_queue.mutex:
+            self.status_queue.queue.clear()
+
         # send sentinels to threads
         self.status_queue.put(self._sentinel)
 
@@ -227,7 +232,8 @@ class ftp_app_view(ctk.CTk):
         return frame
 
     def _create_submit_frame(self) -> ctk.CTkFrame:
-        frame = ctk.CTkFrame(self)
+        frame = ctk.CTkFrame(self, width=460, height=60)
+        frame.grid_propagate(False)
 
         self.submit_button = ctk.CTkButton(frame, width=10, text='Run', command=self.__run_job)
         status_label = ctk.CTkLabel(frame, width=400, textvariable=self.status)
@@ -270,11 +276,10 @@ class ftp_app_view(ctk.CTk):
 
         # create and put job
         self._job_sentinel = object()
-        self.status_queue.put('Starting first job!')
+        # self.status_queue.put(('Starting first job!',))
+        self.progress.set(0.0)
         self.job_queue.put({'job': 'FIRST JOB', 'sentinel': self._job_sentinel})
 
-        # release button
-        # run_button.configure(state='normal')
 
     def __status_thread_main(self):
         # poll status_q
@@ -284,15 +289,23 @@ class ftp_app_view(ctk.CTk):
                 if status is self._job_sentinel:
                     # A job is completed
                     self._job_sentinel = None
-                    status = 'Job Finished!'
+                    status = {'status': 'Job Finished!'}
+                    self.curr_job_size, self.curr_completed_job = 1, 0
                     self.submit_button.configure(state='normal')
 
                 if status is self._sentinel:
                     # kill thread
                     break
 
-                print(status)
-                self.status.set(status)
+                # progress bar logic
+                if 'job_size' in status:
+                    # update job size
+                    self.curr_job_size = status['job_size']
+                    continue
+                self.curr_completed_job += 1
+
+                self.progress.set(int(self.curr_completed_job)/int(self.curr_job_size))
+                self.status.set(status['status'])
 
             except queue.Empty:
                 continue
