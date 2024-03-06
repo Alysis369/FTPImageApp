@@ -4,7 +4,8 @@ An application to pull images from an FTP server implementation.
 --------------
 ## Demo
 threading_success:
-![](https://github.com/Alysis369/FTPImageApp/Misc/threading_success.gif)
+
+![Threading success!](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/threading_success.gif)
 
 ## Progress
 - 2/29: Created producer and GUI threading
