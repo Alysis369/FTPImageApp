@@ -10,8 +10,15 @@ threading_success:
 ## Progress
 - 2/29: Created producer and GUI threading
 - 3/6: Created worker threading
+- 3/8: Created MySQL container and tables
 
 ## Launch
+#### Start DB Container
+```commandline
+cd DB
+docker compose up
+```
+#### Start App
 ```python
 python ftp_app_main.py
 ```
