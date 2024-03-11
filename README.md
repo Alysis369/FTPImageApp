@@ -11,7 +11,10 @@ threading_success:
 - 2/29: Created producer and GUI threading
 - 3/6: Created worker threading
 - 3/8: Created MySQL container and tables
+- 3/10: Established test db/ftp server, connected eq selection to DB
 
+## TODO
+- Add reject_code support to GUI
 ## Launch
 #### Start DB Container
 ```commandline

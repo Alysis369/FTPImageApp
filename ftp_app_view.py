@@ -1,5 +1,4 @@
 import threading
-
 import customtkinter as ctk
 from tkinter import filedialog
 import datetime
@@ -7,15 +6,17 @@ import queue
 
 
 class ftp_app_view(ctk.CTk):
-    def __init__(self, status_queue, job_queue):
+    def __init__(self, status_queue, job_queue, model):
         super().__init__()
         self.geometry("800*600")
         self.title("FTP Image Pull App")
         self.grid_columnconfigure((0, 1), weight=0)
         self.grid_rowconfigure((0), weight=0)
 
+        # model
+        self.model = model()
+
         # attributes
-        # TODO: Move app model props to another class
         self.start_dt = ctk.StringVar(value=str(datetime.datetime.now()))
         self.end_dt = ctk.StringVar(value=str(datetime.datetime.now()))
         self.line = ctk.StringVar()
@@ -42,6 +43,7 @@ class ftp_app_view(ctk.CTk):
         self.status = ctk.StringVar()
 
         # add attribute traces
+        self.line.trace_add('write', self._trace_line_write)
         self.eq.trace_add('write', self._trace_eq_write)
         self.protocol("WM_DELETE_WINDOW", self._shutdown)
 
@@ -49,10 +51,22 @@ class ftp_app_view(ctk.CTk):
         self._start_threads()
         self._pack_frames()
 
+    def _trace_line_write(self, *args):
+        eq_list = self.model.get_station_list(line=self.line.get())
+
+        self.eq.set('')
+        self.eq_num.set('')
+        self.reject.set('')
+        self.eq_frame.children['!ctkoptionmenu'].configure(values=eq_list)
+
     def _trace_eq_write(self, *args):
-        # TODO: replace eq_num_dict with DB
-        eq_num_dict = {'': '', 'Mario': 'Red hair dude', 'Luigi': 'Green hair bro'}
-        self.eq_num.set(eq_num_dict[self.eq.get()])
+        if self.eq.get():
+            self.eq_num.set(self.model.get_eq_num(eq_name=self.eq.get()))
+
+            # update reject list
+            rej_list = self.model.get_reject_list(eq_num=self.eq_num.get())
+            self.reject.set('')
+            self._reject_frame.children['!ctkoptionmenu'].configure(values=rej_list)
 
     def _start_threads(self):
         self.status_thread.start()
@@ -72,12 +86,19 @@ class ftp_app_view(ctk.CTk):
         self.destroy()
 
     def _pack_frames(self):
-        self._create_datetime_frame().grid(row=0, column=0, padx=10, pady=(10, 5), sticky='nsew')
-        self._create_line_frame().grid(row=0, column=1, padx=10, pady=(10, 5), sticky='nsew')
-        self._create_eq_frame().grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky='nsew')
-        self._create_directory_frame().grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky='nsew')
-        self._create_imgpull_tabview().grid(row=3, column=0, columnspan=2, padx=10, pady=(0, 5), sticky='nsew')
-        self._create_submit_frame().grid(row=4, column=0, columnspan=2, padx=10, pady=(0, 5), sticky='nsew')
+        self.datetime_frame = self._create_datetime_frame()
+        self.line_frame = self._create_line_frame()
+        self.eq_frame = self._create_eq_frame()
+        self.directory_frame = self._create_directory_frame()
+        self.imgpull_tabview = self._create_imgpull_tabview()
+        self.submit_frame = self._create_submit_frame()
+
+        self.datetime_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky='nsew')
+        self.line_frame.grid(row=0, column=1, padx=10, pady=(10, 5), sticky='nsew')
+        self.eq_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky='nsew')
+        self.directory_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky='nsew')
+        self.imgpull_tabview.grid(row=3, column=0, columnspan=2, padx=10, pady=(0, 5), sticky='nsew')
+        self.submit_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=(0, 5), sticky='nsew')
 
     def _create_datetime_frame(self) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(master=self)
@@ -95,9 +116,7 @@ class ftp_app_view(ctk.CTk):
         return frame
 
     def _create_line_frame(self) -> ctk.CTkFrame:
-        # TODO: pull line data from DB
-        line_data = ['Nintendo', 'SquareEnix']
-
+        line_data = self.model.line_list
         frame = ctk.CTkFrame(master=self)
 
         for line in line_data:
@@ -107,8 +126,7 @@ class ftp_app_view(ctk.CTk):
         return frame
 
     def _create_eq_frame(self) -> ctk.CTkFrame:
-        # TODO: pull eq data from DB
-        eq_data = ['Mario', 'Luigi']
+        eq_data = []
 
         frame = ctk.CTkFrame(master=self)
 
@@ -140,8 +158,11 @@ class ftp_app_view(ctk.CTk):
         tab_bd = tabview.add('Bd')
         tab_vv = tabview.add('VV')
 
-        self._create_gd_frame(tab_gd).pack(side='left', fill='x')
-        self._create_bd_frame(tab_bd).pack(side='left', fill='x')
+        self.tv_gd_frame = self._create_gd_frame(tab_gd)
+        self.tv_bd_frame = self._create_bd_frame(tab_bd)
+
+        self.tv_gd_frame.pack(side='left', fill='x')
+        self.tv_bd_frame.pack(side='left', fill='x')
 
         return tabview
 
@@ -159,7 +180,9 @@ class ftp_app_view(ctk.CTk):
 
         self._create_cam_frame(master=frame).grid(row=0, column=0, padx=5, pady=(0, 5))
         self._create_insp_frame(master=frame).grid(row=0, column=1, padx=5, pady=(0, 5))
-        self._create_reject_frame(master=frame).grid(row=1, column=0, columnspan=2, padx=5, sticky='ew')
+
+        self._reject_frame = self._create_reject_frame(master=frame)
+        self._reject_frame.grid(row=1, column=0, columnspan=2, padx=5, sticky='ew')
         return frame
 
     # noinspection PyTypeChecker
@@ -211,8 +234,7 @@ class ftp_app_view(ctk.CTk):
         return frame
 
     def _create_reject_frame(self, master=None) -> ctk.CTkFrame:
-        # TODO: pull eq data from DB
-        reject_data = ['', 'Hat', 'Mustache', 'Clothes']
+        reject_data = []
 
         frame = ctk.CTkFrame(master if master else self)
 

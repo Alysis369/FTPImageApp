@@ -1,5 +1,6 @@
 from ftp_app_view import ftp_app_view
 from ftp_app_controller import ftp_app_controller
+from ftp_app_model import ftp_app_model
 import queue
 import threading
 import time
@@ -8,6 +9,7 @@ import time
 class main:
     VIEW = ftp_app_view
     CONTROLLER = ftp_app_controller
+    MODEL = ftp_app_model
 
     def __init__(self, n_worker=5):
         print('Setting up...')
@@ -32,7 +34,7 @@ class main:
             worker.start()
 
         # start app
-        app = self.VIEW(self.status_q, self.job_q)
+        app = self.VIEW(self.status_q, self.job_q, self.MODEL)
         app.mainloop()
 
     def shutdown(self):
