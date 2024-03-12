@@ -13,6 +13,9 @@ class main:
 
     def __init__(self, n_worker=5):
         print('Setting up...')
+        # setup controller
+        self.controller = self.CONTROLLER(self.MODEL)
+
         # setup queues
         self._sentinel = object()
         self.status_q = queue.Queue()
@@ -28,14 +31,19 @@ class main:
     def startup(self):
         """ Startup threads and app """
         print("Starting up...")
-        # start threads
-        self.job_producer_thread.start()
-        for worker in self.img_worker_pool:
-            worker.start()
 
-        # start app
-        app = self.VIEW(self.status_q, self.job_q, self.MODEL)
-        app.mainloop()
+        # start threads
+        try:
+            self.job_producer_thread.start()
+            for worker in self.img_worker_pool:
+                worker.start()
+
+            # start app
+            app = self.VIEW(self.status_q, self.job_q, self.controller)
+            app.mainloop()
+        except Exception as e:
+            print(f'App load failed: {e}')
+            self.shutdown()
 
     def shutdown(self):
         print("Shutting down...")
@@ -68,13 +76,13 @@ class main:
                     break
 
                 # main
-                img_list = self.CONTROLLER.img_list_producer(job['job'])
+                imgpath_list = self.controller.img_list_producer(job['job'])
 
-                status_q.put({'status': f"identified {len(img_list)} images..", 'job_size': len(img_list)})
+                status_q.put({'status': f"identified {len(imgpath_list)} images..", 'job_size': len(imgpath_list)})
 
                 # process image_list, put in img_q
-                for img in img_list:
-                    img_q.put({'img_name': img})
+                for img in imgpath_list:
+                    img_q.put({'imgpath': img, 'homepath': job['job'].home_dir})
 
                 # indicate that all images in the job has been sent
                 img_q.put({'sentinel': job['sentinel']})
@@ -102,8 +110,9 @@ class main:
                     continue
 
                 # main
-                time.sleep(1)
-                status_q.put({'status': f'{img["img_name"]} is processed by {threading.current_thread().name}'})
+                status = self.controller.model.download_ftp_image(homepath=img['homepath'], imgpath=img['imgpath'])
+                print(f'{img["imgpath"]} {status} by {threading.current_thread().name}')
+                status_q.put({'status': f'{img["imgpath"]} {status} by {threading.current_thread().name}'})
                 img_q.task_done()
 
             except queue.Empty:

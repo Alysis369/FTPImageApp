@@ -3,10 +3,11 @@ import customtkinter as ctk
 from tkinter import filedialog
 import datetime
 import queue
+from job import Job
 
 
 class ftp_app_view(ctk.CTk):
-    def __init__(self, status_queue, job_queue, model):
+    def __init__(self, status_queue, job_queue, controller):
         super().__init__()
         self.geometry("800*600")
         self.title("FTP Image Pull App")
@@ -14,7 +15,7 @@ class ftp_app_view(ctk.CTk):
         self.grid_rowconfigure((0), weight=0)
 
         # model
-        self.model = model()
+        self.model = controller.model
 
         # attributes
         self.start_dt = ctk.StringVar(value=str(datetime.datetime.now()))
@@ -25,7 +26,7 @@ class ftp_app_view(ctk.CTk):
         self.home_dir = ctk.StringVar()
         self.camera = ctk.StringVar()
         self.inspection = ctk.StringVar()
-        self.quality = ctk.StringVar()
+        self.quality = ctk.StringVar(value=str('Gd'))
         self.reject = ctk.StringVar()
 
         # threading queues
@@ -156,7 +157,6 @@ class ftp_app_view(ctk.CTk):
         tabview.configure(command=lambda tv=tabview: self.__tabview_change(tv))
         tab_gd = tabview.add('Gd')
         tab_bd = tabview.add('Bd')
-        tab_vv = tabview.add('VV')
 
         self.tv_gd_frame = self._create_gd_frame(tab_gd)
         self.tv_bd_frame = self._create_bd_frame(tab_bd)
@@ -290,6 +290,7 @@ class ftp_app_view(ctk.CTk):
         self.quality.set(tabview.get())
         self.camera.set('')
         self.inspection.set('')
+        self.reject.set('')
         self.__cam_rb_select.set('Any')
         self.__insp_rb_select.set('Any')
 
@@ -298,9 +299,22 @@ class ftp_app_view(ctk.CTk):
 
         # create and put job
         self._job_sentinel = object()
+        job = Job(
+            start_date=self.start_dt.get(),
+            end_date=self.end_dt.get(),
+            line=self.line.get(),
+            eq=self.eq.get(),
+            eq_num=self.eq_num.get(),
+            home_dir=self.home_dir.get(),
+            camera=self.camera.get(),
+            inspection=self.inspection.get(),
+            quality=self.quality.get(),
+            reject=self.reject.get()
+        )
+
         # self.status_queue.put(('Starting first job!',))
         self.progress.set(0.0)
-        self.job_queue.put({'job': 'FIRST JOB', 'sentinel': self._job_sentinel})
+        self.job_queue.put({'job': job, 'sentinel': self._job_sentinel})
 
 
     def __status_thread_main(self):
@@ -311,7 +325,7 @@ class ftp_app_view(ctk.CTk):
                 if status is self._job_sentinel:
                     # A job is completed
                     self._job_sentinel = None
-                    status = {'status': 'Job Finished!'}
+                    status = {'status': f'Job Finished! Transferred {self.curr_job_size} images.'}
                     self.curr_job_size, self.curr_completed_job = 1, 0
                     self.submit_button.configure(state='normal')
 
