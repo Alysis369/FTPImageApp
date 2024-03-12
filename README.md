@@ -7,6 +7,10 @@ Demo:
 
 ![Overall Demo](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/draft_demo.gif)
 
+## Prerequisite
+
+## Demo Limitation
+- date limitation
 
 ## Progress
 - 2/29: Created producer and GUI threading
