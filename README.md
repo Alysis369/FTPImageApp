@@ -43,7 +43,7 @@ FTP server, saving images to a user-specified directory.
 
 ### Prerequisite
 
-Prerequisite libraries contained in *requirements.txt.* Recommended environement creation:
+Prerequisite libraries contained in *requirements.txt.* Recommended environment creation through anaconda:
 
 ```commandline
 conda create --name ftp_image_app --file requirements.txt
