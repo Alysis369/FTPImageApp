@@ -1,17 +1,17 @@
-from ftp_app_view import ftp_app_view
-from ftp_app_controller import ftp_app_controller
-from ftp_app_model import ftp_app_model
+from ftp_app_view import FtpAppView
+from ftp_app_controller import FtpAppController
+from ftp_app_model import FtpAppModel
 import queue
 import threading
-import time
 
 
-class main:
-    VIEW = ftp_app_view
-    CONTROLLER = ftp_app_controller
-    MODEL = ftp_app_model
+class Main:
+    VERSION = 0.0
+    VIEW = FtpAppView
+    CONTROLLER = FtpAppController
+    MODEL = FtpAppModel
 
-    def __init__(self, n_worker=5):
+    def __init__(self, n_worker: int = 5):
         print('Setting up...')
         # setup controller
         self.controller = self.CONTROLLER(self.MODEL)
@@ -23,10 +23,10 @@ class main:
         self.img_q = queue.Queue()
 
         # setup threads
-        self.job_producer_thread = threading.Thread(target=self.job_producer_main,
+        self.job_producer_thread = threading.Thread(target=self._job_producer_main,
                                                     args=(self.status_q, self.job_q, self.img_q))
         self.img_worker_pool = []
-        self.spawn_worker_pool(n_worker)  # spawn workers
+        self._spawn_worker_pool(n_worker)  # spawn workers
 
     def startup(self):
         """ Startup threads and app """
@@ -46,6 +46,7 @@ class main:
             self.shutdown()
 
     def shutdown(self):
+        """ Shutdown app and clear threads """
         print("Shutting down...")
         # flush queue
         for q in (self.job_q, self.img_q):
@@ -61,12 +62,12 @@ class main:
         for worker in self.img_worker_pool:
             worker.join()
 
-    def spawn_worker_pool(self, n_worker):
+    def _spawn_worker_pool(self, n_worker: int):
         for _ in range(n_worker):
-            thread = threading.Thread(target=self.img_worker_main, args=(self.status_q, self.img_q))
+            thread = threading.Thread(target=self._img_worker_main, args=(self.status_q, self.img_q))
             self.img_worker_pool.append(thread)
 
-    def job_producer_main(self, status_q, job_q, img_q):
+    def _job_producer_main(self, status_q: queue.Queue, job_q: queue.Queue, img_q: queue.Queue):
         """ main for job producer """
 
         while True:
@@ -90,7 +91,7 @@ class main:
             except queue.Empty:
                 continue
 
-    def img_worker_main(self, status_q, img_q):
+    def _img_worker_main(self, status_q: queue.Queue, img_q: queue.Queue):
         """ main job for img worker """
 
         while True:
@@ -111,7 +112,6 @@ class main:
 
                 # main
                 status = self.controller.model.download_ftp_image(homepath=img['homepath'], imgpath=img['imgpath'])
-                print(f'{img["imgpath"]} {status} by {threading.current_thread().name}')
                 status_q.put({'status': f'{img["imgpath"]} {status} by {threading.current_thread().name}'})
                 img_q.task_done()
 
@@ -120,9 +120,6 @@ class main:
 
 
 if __name__ == "__main__":
-    main = main()
+    main = Main()
     main.startup()  # start the threads and app
     main.shutdown()  # shutdown the app
-
-    for thread_name in threading.enumerate():
-        print(thread_name.name)

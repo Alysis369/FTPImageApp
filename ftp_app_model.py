@@ -1,11 +1,11 @@
 import os
-
 from sqlalchemy import create_engine, engine as sa_engine, text
 import pandas as pd
 from ftplib import FTP
 
 
-class ftp_app_model:
+class FtpAppModel:
+    VERSION = 0.0
     PT_DB = 'root:password@localhost:3306/eng'
     IMG_DB = 'root:password@localhost:3307/eng'
     IMG_FTP = {'server': 'localhost',
@@ -13,8 +13,8 @@ class ftp_app_model:
                'password': 'pass'}
 
     def __init__(self, pt_db=PT_DB, img_db=IMG_DB, img_ftp=IMG_FTP):
-        self.ptdb = self.db_init(pt_db)
-        self.imgdb = self.db_init(img_db)
+        self.ptdb = self._db_init(pt_db)
+        self.imgdb = self._db_init(img_db)
 
     @staticmethod
     def _ptdb_query_decorator(func):
@@ -34,25 +34,25 @@ class ftp_app_model:
 
         return wrapper
 
-    def db_init(self, creds: str) -> sa_engine:
+    def _db_init(self, creds: str) -> sa_engine:
         engine = create_engine(f"mysql+pymysql://{creds}")
-        self.db_isalive(engine)  # check if conn is valid
+        self._db_isalive(engine)  # check if conn is valid
         return engine
 
-    def db_isalive(self, engine: sa_engine):
+    def _db_isalive(self, engine: sa_engine):
         with engine.connect() as conn:
             try:
                 conn.execute(text("SELECT 1"))
             except Exception as e:
                 print(f'Connection error: {e}')
 
-    def ftp_init(self, creds: dict) -> FTP:
+    def _ftp_init(self, creds: dict) -> FTP:
         ftp = FTP(creds['server'], creds['user'], creds['password'])
         ftp.set_pasv(True)
-        self.ftp_isalive(ftp)  # check if conn is valid
+        self._ftp_isalive(ftp)  # check if conn is valid
         return ftp
 
-    def ftp_isalive(self, ftp: FTP):
+    def _ftp_isalive(self, ftp: FTP):
         try:
             ftp.voidcmd("NOOP")
         except Exception as e:
@@ -90,8 +90,8 @@ class ftp_app_model:
 
         data = pd.read_sql_query(
             "SELECT RejectName FROM ENG.RejectType rt "
-                "JOIN ENG.Station s ON rt.StationID = s.StationID " 
-                f"WHERE StationNum  = '{eq_num}'",
+            "JOIN ENG.Station s ON rt.StationID = s.StationID "
+            f"WHERE StationNum  = '{eq_num}'",
             conn)
 
         return list(data['RejectName'])
@@ -118,7 +118,7 @@ class ftp_app_model:
         imgpath = '/'.join(filepath)
 
         # spawn new ftp connection
-        ftp = self.ftp_init(self.IMG_FTP)
+        ftp = self._ftp_init(self.IMG_FTP)
         # change dir
         ftp.cwd(imgpath)
 
@@ -134,4 +134,3 @@ class ftp_app_model:
                 ftp.quit()
                 return "FAIL"
         return "SUCCESS"
-

@@ -1,43 +1,124 @@
 # FTP_image_app
-An application to pull images from an FTP server implementation.
+
+An demo version application to pull images from an FTP server implementation.
 
 --------------
-## Demo
-Demo:
+
+# Description
+
+Goal of the FTP_image_app is to create an executable app.\
+\
+Based on user input, the app will transact with 2 local databases to create a list of images to download from an
+FTP server, saving images to a user-specified directory.
 
 ![Overall Demo](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/draft_demo.gif)
 
-## Prerequisite
+### Design
 
-## Demo Limitation
-- date limitation
+###### Data Flow Diagram
 
-## Progress
+![DataFlowDiagram](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/Ftp_image_app_Data_Flow_Diagram.png)
+
+###### Class UML Diagram
+
+![ClassDiagram](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/Ftp_image_app_UML_Diagram.png)
+
+### Prerequisite
+
+Prerequisite libraries contained in *requirements.txt.* Recommended environement creation:
+
+```commandline
+conda create --name ftp_image_app --file requirements.txt
+```
+
+------
+
+# Demo Environment
+
+### Description
+Demo test environment includes:
+- PTDB (*Local MySQL DB*): Contains part data information, including reject criteria
+- ImgDB (*Local MySQL DB*): Contains FTP imagepath information
+- ImgFTP (*Local VSMTP*): Contains images
+
+Whole environment is docker-specified and spawned.
+
+### DB ERD
+
+###### PTDB ERD
+*user: root | password: password*\
+![PTDB_ERD](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/ptdb_eng_erd.png)
+
+###### IMGDB ERD
+*user: root | password: password*\
+![IMGDB_ERD](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/imgdb_eng_erd.png)
+
+
+### FTP Image Server
+
+Image server contains 24 sample images of different iconic characters from Nintendo and SquareEnix games.
+
+*user: user | password: pass*
+
+Characters are referred differently in the app:
+- Line: Game company (Nintendo/SquareEnix)
+- Eq: Character (Ex. Mario, Luigi)
+- Eq_num: Character Descriptions
+- Reject: Specific attribute of Character
+
+Characters (*referred in the app as Equipment*) includes:
+- Nintendo: Mario, Luigi and Peach
+- SquareEnix: Sora, Cloud, Tifa
+
+### Demo Environment Limitation
+
+- With the current data present in the DB, parts were created on *2024-03-11 01:05:54*. 
+**Start_date and End_date must encompass this datetime.**
+
+------
+
+# Quickstart
+
+#### Start DB Container
+
+```commandline
+cd DB
+docker compose up -d
+```
+
+#### Start App
+
+```python
+python
+ftp_app_main.py
+```
+
+------
+
+# Miscellaneous
+
+### Progress
+
 - 2/29: Created producer and GUI threading
 - 3/6: Created worker threading
 - 3/8: Created MySQL container and tables
 - 3/10: Established test db/ftp server, connected eq selection to DB
+- 3/11: Finished first draft of fully working App
 
-## TODO
+-----
+
+### TODO/Future Features
+
 - Add reject_code support to GUI
 - Use threading to execute db calls to both db, prod might be slow and IO bound
 - ImgPath list and txid list comparison is O(N*M)
-  - possible for chunking and multiprocessing?
-  - after every cross check, add job to queue instead of processing whole list, figure out how to determine job size
+    - possible for chunking and multiprocessing?
+    - after every cross check, add job to queue instead of processing whole list, figure out how to determine job size
 - Only support single equipment selection
 - On prod, feature to automatically sort folder
 - with workers not locking ftp curr dir, unable to support multiple directory
 - Add feature for ALL images, and add support for VV images
 - FTP requires spawning a different connection for each img download.. not sure if this is effective
 
-## Launch
-#### Start DB Container
-```commandline
-cd DB
-docker compose up
-```
-#### Start App
-```python
-python ftp_app_main.py
-```
+
 

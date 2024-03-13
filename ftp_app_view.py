@@ -6,13 +6,13 @@ import queue
 from job import Job
 
 
-class ftp_app_view(ctk.CTk):
+class FtpAppView(ctk.CTk):
     def __init__(self, status_queue, job_queue, controller):
         super().__init__()
         self.geometry("800*600")
         self.title("FTP Image Pull App")
         self.grid_columnconfigure((0, 1), weight=0)
-        self.grid_rowconfigure((0), weight=0)
+        self.grid_rowconfigure(0, weight=0)
 
         # model
         self.model = controller.model
@@ -30,8 +30,8 @@ class ftp_app_view(ctk.CTk):
         self.reject = ctk.StringVar()
 
         # threading queues
-        self.status_queue = status_queue
-        self.job_queue = job_queue
+        self.status_q = status_queue
+        self.job_q = job_queue
 
         # threads
         self._sentinel = object()
@@ -74,11 +74,11 @@ class ftp_app_view(ctk.CTk):
 
     def _shutdown(self):
         # clear queue
-        with self.status_queue.mutex:
-            self.status_queue.queue.clear()
+        with self.status_q.mutex:
+            self.status_q.queue.clear()
 
         # send sentinels to threads
-        self.status_queue.put(self._sentinel)
+        self.status_q.put(self._sentinel)
 
         # wait on thread death
         self.status_thread.join()
@@ -314,14 +314,13 @@ class ftp_app_view(ctk.CTk):
 
         # self.status_queue.put(('Starting first job!',))
         self.progress.set(0.0)
-        self.job_queue.put({'job': job, 'sentinel': self._job_sentinel})
-
+        self.job_q.put({'job': job, 'sentinel': self._job_sentinel})
 
     def __status_thread_main(self):
         # poll status_q
         while True:
             try:
-                status = self.status_queue.get(timeout=0.1)
+                status = self.status_q.get(timeout=0.1)
                 if status is self._job_sentinel:
                     # A job is completed
                     self._job_sentinel = None
@@ -340,7 +339,7 @@ class ftp_app_view(ctk.CTk):
                     continue
                 self.curr_completed_job += 1
 
-                self.progress.set(int(self.curr_completed_job)/int(self.curr_job_size))
+                self.progress.set(int(self.curr_completed_job) / int(self.curr_job_size))
                 self.status.set(status['status'])
 
             except queue.Empty:

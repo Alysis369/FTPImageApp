@@ -1,18 +1,23 @@
-import pandas as pd
 from job import Job
 
 
-class ftp_app_controller():
+class FtpAppController:
+    VERSION = 0.0
+
     def __init__(self, model):
-        self.version = 0.0
         self.model = model()
 
-    def img_list_producer(self, job: Job):
+    def img_list_producer(self, job: Job) -> list:
+        """
+        run DB calls and produce list of images to download
+        :param job:
+        :return target_imgpath_list:
+        """
         print(f'executing job {repr(job)}')
 
         # Execute db calls
-        ptdb_query = ftp_app_controller.generate_ptdb_query(job)
-        imgdb_query = ftp_app_controller.generate_imgdb_query(job)
+        ptdb_query = FtpAppController.generate_ptdb_query(job)
+        imgdb_query = FtpAppController.generate_imgdb_query(job)
         ptdb_results = self.model.run_ptdb_query(query=ptdb_query)
         imgdb_results = self.model.run_imgdb_query(query=imgdb_query)
 
@@ -33,6 +38,11 @@ class ftp_app_controller():
 
     @staticmethod
     def generate_ptdb_query(job: Job) -> str:
+        """
+        Generate ptdb query str
+        :param job:
+        :return query: str
+        """
         query = f"SELECT Txid FROM {job.ptdb_table} {job.ptdb_table_short} " + \
                 f"LEFT JOIN ENG.Station s ON {job.ptdb_table_short}.StationID = s.StationID " + \
                 f"LEFT JOIN ENG.RejectType rt on {job.ptdb_table_short}.RejectID  = rt.RejectID " + \
@@ -51,6 +61,11 @@ class ftp_app_controller():
 
     @staticmethod
     def generate_imgdb_query(job: Job) -> str:
+        """
+        Generate imgdb query str
+        :param job:
+        :return query: str
+        """
         query = f"SELECT ImgPath FROM ENG.ImgFile if2 " + \
                 f"WHERE ImgPath LIKE '%%{job.eq}%%{job.camera}%%{job.inspection}%%' " + \
                 f"AND CreatedDateTime BETWEEN '{job.start_date}' AND '{job.end_date}' "

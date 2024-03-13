@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class Job:
     DB_TABLE = {
@@ -29,5 +30,3 @@ class Job:
     @property
     def ptdb_table_short(self):
         return Job.DB_TABLE_SHORT[self.line]
-
-
