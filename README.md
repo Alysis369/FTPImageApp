@@ -2,6 +2,24 @@
 
 An demo version application to pull images from an FTP server implementation.
 
+------
+
+# Quickstart
+
+#### Start DB Container
+
+```commandline
+cd DB
+docker compose up -d
+```
+
+#### Start App
+
+```python
+python
+ftp_app_main.py
+```
+
 --------------
 
 # Description
@@ -36,7 +54,9 @@ conda create --name ftp_image_app --file requirements.txt
 # Demo Environment
 
 ### Description
+
 Demo test environment includes:
+
 - PTDB (*Local MySQL DB*): Contains part data information, including reject criteria
 - ImgDB (*Local MySQL DB*): Contains FTP imagepath information
 - ImgFTP (*Local VSMTP*): Contains images
@@ -46,13 +66,14 @@ Whole environment is docker-specified and spawned.
 ### DB ERD
 
 ###### PTDB ERD
+
 *user: root | password: password*\
 ![PTDB_ERD](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/ptdb_eng_erd.png)
 
 ###### IMGDB ERD
+
 *user: root | password: password*\
 ![IMGDB_ERD](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/imgdb_eng_erd.png)
-
 
 ### FTP Image Server
 
@@ -61,37 +82,21 @@ Image server contains 24 sample images of different iconic characters from Ninte
 *user: user | password: pass*
 
 Characters are referred differently in the app:
+
 - Line: Game company (Nintendo/SquareEnix)
 - Eq: Character (Ex. Mario, Luigi)
 - Eq_num: Character Descriptions
 - Reject: Specific attribute of Character
 
 Characters (*referred in the app as Equipment*) includes:
+
 - Nintendo: Mario, Luigi and Peach
 - SquareEnix: Sora, Cloud, Tifa
 
 ### Demo Environment Limitation
 
-- With the current data present in the DB, parts were created on *2024-03-11 01:05:54*. 
-**Start_date and End_date must encompass this datetime.**
-
-------
-
-# Quickstart
-
-#### Start DB Container
-
-```commandline
-cd DB
-docker compose up -d
-```
-
-#### Start App
-
-```python
-python
-ftp_app_main.py
-```
+- With the current data present in the DB, parts were created on *2024-03-11 01:05:54*.
+  **Start_date and End_date must encompass this datetime.**
 
 ------
 
