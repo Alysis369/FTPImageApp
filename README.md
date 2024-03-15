@@ -42,6 +42,11 @@ FTP server, saving images to a user-specified directory.
 ![ClassDiagram](https://github.com/Alysis369/FTPImageApp/blob/dev/Misc/Ftp_image_app_UML_Diagram.png)
 
 ### Prerequisite
+- Docker 
+- Anaconda
+- Prerequisite python libraries
+
+###### Presrequisite Python Libraries
 
 Prerequisite libraries contained in *requirements.txt.* Recommended environement creation:
 
@@ -109,21 +114,29 @@ Characters (*referred in the app as Equipment*) includes:
 - 3/8: Created MySQL container and tables
 - 3/10: Established test db/ftp server, connected eq selection to DB
 - 3/11: Finished first draft of fully working App
+- 3/15: Handled DB/FTP connection timeout on startup, FTP connection during pull
 
 -----
 
 ### TODO/Future Features
 
-- Add reject_code support to GUI
+##### Known Bugs
+- Connection to DB stalls on launched, but paused DB container
+
+##### Dev Changes
+
 - Use threading to execute db calls to both db, prod might be slow and IO bound
 - ImgPath list and txid list comparison is O(N*M)
     - possible for chunking and multiprocessing?
     - after every cross check, add job to queue instead of processing whole list, figure out how to determine job size
-- Only support single equipment selection
-- On prod, feature to automatically sort folder
-- with workers not locking ftp curr dir, unable to support multiple directory
 - Add feature for ALL images, and add support for VV images
-- FTP requires spawning a different connection for each img download.. not sure if this is effective
+- FTP requires spawning a different connection for each img download.. 
+- Check connection upon application startup, displays warning and exits gracefully.
 
+##### Prod Changes
+- Add reject_code support to GUI 
+  - Combine df from DB call, unparse them upon selection
+- Prod to inherit ftp_app_model class to adjust to prod environment
+- Prod to support multi-date pull, and organize the folder automatically per date
 
 

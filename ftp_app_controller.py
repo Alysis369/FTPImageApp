@@ -5,7 +5,11 @@ class FtpAppController:
     VERSION = 0.0
 
     def __init__(self, model):
-        self.model = model()
+        self.model = model
+
+    def start(self):
+        """ Start the controller """
+        self.model = self.model()
 
     def img_list_producer(self, job: Job) -> list:
         """

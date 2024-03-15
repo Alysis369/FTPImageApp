@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine, engine as sa_engine, text
 import pandas as pd
 from ftplib import FTP
+import threading
 
 
 class FtpAppModel:
@@ -15,6 +16,7 @@ class FtpAppModel:
     def __init__(self, pt_db=PT_DB, img_db=IMG_DB, img_ftp=IMG_FTP):
         self.ptdb = self._db_init(pt_db)
         self.imgdb = self._db_init(img_db)
+        self._ftp_init(img_ftp)  # make sure connection is alive
 
     @staticmethod
     def _ptdb_query_decorator(func):
@@ -35,28 +37,28 @@ class FtpAppModel:
         return wrapper
 
     def _db_init(self, creds: str) -> sa_engine:
-        engine = create_engine(f"mysql+pymysql://{creds}")
-        self._db_isalive(engine)  # check if conn is valid
-        return engine
+        try:
+            engine = create_engine(f"mysql+pymysql://{creds}")
+            self._db_isalive(engine)  # check if conn is valid
+            return engine
+        except Exception as e:
+            raise ConnectionError(f'SQL DB Connection Error: {e}')
 
     def _db_isalive(self, engine: sa_engine):
         with engine.connect() as conn:
-            try:
-                conn.execute(text("SELECT 1"))
-            except Exception as e:
-                print(f'Connection error: {e}')
+            conn.execute(text("SELECT 1"))
 
     def _ftp_init(self, creds: dict) -> FTP:
-        ftp = FTP(creds['server'], creds['user'], creds['password'])
-        ftp.set_pasv(True)
-        self._ftp_isalive(ftp)  # check if conn is valid
-        return ftp
+        try:
+            ftp = FTP(creds['server'], creds['user'], creds['password'], timeout=3)
+            ftp.set_pasv(True)
+            self._ftp_isalive(ftp)  # check if conn is valid
+            return ftp
+        except Exception as e:
+            raise ConnectionError(f'FTP Connection Error: {e}')
 
     def _ftp_isalive(self, ftp: FTP):
-        try:
-            ftp.voidcmd("NOOP")
-        except Exception as e:
-            print(f'Connection failed: {e}')
+        ftp.voidcmd("NOOP")
 
     @property
     def line_list(self) -> list:
@@ -71,7 +73,6 @@ class FtpAppModel:
             "SELECT StationNames FROM ENG.Station s "
             f"WHERE Line = '{line}'",
             conn)
-
         return list(data['StationNames'])
 
     @_ptdb_query_decorator

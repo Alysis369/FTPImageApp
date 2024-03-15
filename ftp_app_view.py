@@ -15,7 +15,7 @@ class FtpAppView(ctk.CTk):
         self.grid_rowconfigure(0, weight=0)
 
         # model
-        self.model = controller.model
+        self.controller = controller
 
         # attributes
         self.start_dt = ctk.StringVar(value=str(datetime.datetime.now()))
@@ -40,17 +40,37 @@ class FtpAppView(ctk.CTk):
 
         # in-app attributes
         self.progress = ctk.DoubleVar(value=0.0)
-        self.curr_job_size, self.curr_completed_job = 1, 0
+        self.curr_job_size, self.curr_completed_job, self.curr_timeout_job = 1, 0, 0
         self.status = ctk.StringVar()
 
         # add attribute traces
         self.line.trace_add('write', self._trace_line_write)
         self.eq.trace_add('write', self._trace_eq_write)
-        self.protocol("WM_DELETE_WINDOW", self._shutdown)
+        self.protocol("WM_DELETE_WINDOW", self.shutdown)
 
+    @property
+    def model(self):
+        return self.controller.model
+
+    def start(self):
         # pack frames
         self._start_threads()
         self._pack_frames()
+
+    def shutdown(self):
+        # kill App
+        self.destroy()
+
+    def shutdown_thread(self):
+        # clear queue
+        with self.status_q.mutex:
+            self.status_q.queue.clear()
+
+        # send sentinels to threads
+        self.status_q.put(self._sentinel)
+
+        # wait on thread death
+        self.status_thread.join()
 
     def _trace_line_write(self, *args):
         eq_list = self.model.get_station_list(line=self.line.get())
@@ -70,21 +90,8 @@ class FtpAppView(ctk.CTk):
             self._reject_frame.children['!ctkoptionmenu'].configure(values=rej_list)
 
     def _start_threads(self):
-        self.status_thread.start()
-
-    def _shutdown(self):
-        # clear queue
-        with self.status_q.mutex:
-            self.status_q.queue.clear()
-
-        # send sentinels to threads
-        self.status_q.put(self._sentinel)
-
-        # wait on thread death
-        self.status_thread.join()
-
-        # kill App
-        self.destroy()
+        if not self.status_thread.is_alive():
+            self.status_thread.start()
 
     def _pack_frames(self):
         self.datetime_frame = self._create_datetime_frame()
@@ -324,8 +331,12 @@ class FtpAppView(ctk.CTk):
                 if status is self._job_sentinel:
                     # A job is completed
                     self._job_sentinel = None
-                    status = {'status': f'Job Finished! Transferred {self.curr_job_size} images.'}
-                    self.curr_job_size, self.curr_completed_job = 1, 0
+
+                    job_summary_status = f'Completed! Transferred {self.curr_job_size - self.curr_timeout_job} images. '
+                    job_summary_status += f'{self.curr_timeout_job} timeout occurred.' if self.curr_timeout_job else ''
+
+                    status = {'status': job_summary_status}
+                    self.curr_job_size, self.curr_completed_job, self.curr_timeout_job = 1, 0, 0
                     self.submit_button.configure(state='normal')
 
                 if status is self._sentinel:
@@ -337,8 +348,13 @@ class FtpAppView(ctk.CTk):
                     # update job size
                     self.curr_job_size = status['job_size']
                     continue
-                self.curr_completed_job += 1
+                # time out logic
+                if 'timeout' in status:
+                    # add to timeout counter
+                    self.curr_timeout_job += 1
+                    continue
 
+                self.curr_completed_job += 1
                 self.progress.set(int(self.curr_completed_job) / int(self.curr_job_size))
                 self.status.set(status['status'])
 

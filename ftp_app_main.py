@@ -3,6 +3,8 @@ from ftp_app_controller import FtpAppController
 from ftp_app_model import FtpAppModel
 import queue
 import threading
+import traceback as tb
+from CTkMessagebox import CTkMessagebox
 
 
 class Main:
@@ -13,9 +15,6 @@ class Main:
 
     def __init__(self, n_worker: int = 5):
         print('Setting up...')
-        # setup controller
-        self.controller = self.CONTROLLER(self.MODEL)
-
         # setup queues
         self._sentinel = object()
         self.status_q = queue.Queue()
@@ -28,22 +27,40 @@ class Main:
         self.img_worker_pool = []
         self._spawn_worker_pool(n_worker)  # spawn workers
 
+        # setup controller and view
+        self.controller = self.CONTROLLER(self.MODEL)
+        self.view = self.VIEW(self.status_q, self.job_q, self.controller)
+
     def startup(self):
         """ Startup threads and app """
         print("Starting up...")
 
         # start threads
         try:
-            self.job_producer_thread.start()
+            # start thread
+            if not self.job_producer_thread.is_alive():
+                self.job_producer_thread.start()
             for worker in self.img_worker_pool:
+                if worker.is_alive():
+                    continue
                 worker.start()
 
+            # start controller
+            self.controller.start()
+
             # start app
-            app = self.VIEW(self.status_q, self.job_q, self.controller)
-            app.mainloop()
+            self.view.start()
+            self.view.mainloop()
         except Exception as e:
-            print(f'App load failed: {e}')
-            self.shutdown()
+            # create warning box
+            print(''.join(tb.format_exception(None, e, e.__traceback__)))
+            msg = CTkMessagebox(title='App load failed', message=str(e), icon="cancel",
+                                option_1='Retry', option_2='Cancel')
+
+            if msg.get() == 'Retry':
+                self.startup()
+            else:
+                self.shutdown()
 
     def shutdown(self):
         """ Shutdown app and clear threads """
@@ -61,6 +78,9 @@ class Main:
         self.job_producer_thread.join()
         for worker in self.img_worker_pool:
             worker.join()
+
+        # confirm app death
+        self.view.shutdown_thread()
 
     def _spawn_worker_pool(self, n_worker: int):
         for _ in range(n_worker):
@@ -117,6 +137,11 @@ class Main:
 
             except queue.Empty:
                 continue
+
+            except ConnectionError:
+                status_q.put(
+                    {'status': f'FTP connection TIMEOUT by {threading.current_thread().name}', 'timeout': True})
+                img_q.task_done()
 
 
 if __name__ == "__main__":
