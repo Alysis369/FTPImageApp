@@ -116,6 +116,7 @@ Characters (*referred in the app as Equipment*) includes:
 - 3/11: Finished first draft of fully working App
 - 3/15: Handled DB/FTP connection timeout on startup, DB/FTP connection during pull
 - 3/15: Added threading to DB calls, increase speed in prod
+- 3/15: Added home_dir validation
 
 -----
 
@@ -136,6 +137,8 @@ Characters (*referred in the app as Equipment*) includes:
 - Add feature for ALL images, and add support for VV images
 - FTP requires spawning a different connection for each img download.. 
 - ~~Check connection upon application startup, displays warning and exits gracefully.~~ *Updated 3/15*
+- ~~Add homepath validation~~ Added 3/15
+- Add error status to GUI
 
 ##### Prod Changes
 - Add reject_code support to GUI 

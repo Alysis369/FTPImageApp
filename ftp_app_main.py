@@ -111,7 +111,10 @@ class Main:
                 continue
             except ConnectionError:
                 status_q.put(
-                    {'status': f'DB connection TIMEOUT by {threading.current_thread().name}', 'timeout': True})
+                    {'status': f'DB connection TIMEOUT by {threading.current_thread().name}', 'fault': True})
+                img_q.put({'sentinel': job['sentinel']})
+            except AttributeError:
+                status_q.put({'status': f'HOMEPATH invalid by {threading.current_thread().name}', 'fault': True})
                 img_q.put({'sentinel': job['sentinel']})
 
     def _img_worker_main(self, status_q: queue.Queue, img_q: queue.Queue):
@@ -143,7 +146,7 @@ class Main:
 
             except ConnectionError:
                 status_q.put(
-                    {'status': f'FTP connection TIMEOUT by {threading.current_thread().name}', 'timeout': True})
+                    {'status': f'FTP connection TIMEOUT by {threading.current_thread().name}', 'fault': True})
                 img_q.task_done()
 
 

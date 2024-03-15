@@ -40,7 +40,7 @@ class FtpAppView(ctk.CTk):
 
         # in-app attributes
         self.progress = ctk.DoubleVar(value=0.0)
-        self.curr_job_size, self.curr_completed_job, self.curr_timeout_job = 1, 0, 0
+        self.curr_job_size, self.curr_completed_job, self.curr_fault_job = 1, 0, 0
         self.status = ctk.StringVar()
 
         # add attribute traces
@@ -332,11 +332,11 @@ class FtpAppView(ctk.CTk):
                     # A job is completed
                     self._job_sentinel = None
 
-                    job_summary_status = f'Completed! Transferred {self.curr_job_size - self.curr_timeout_job} images. '
-                    job_summary_status += f'{self.curr_timeout_job} timeout occurred.' if self.curr_timeout_job else ''
+                    job_summary_status = f'Completed! Transferred {self.curr_job_size - self.curr_fault_job} images. '
+                    job_summary_status += f'{self.curr_fault_job} fault occurred.' if self.curr_fault_job else ''
 
                     status = {'status': job_summary_status}
-                    self.curr_job_size, self.curr_completed_job, self.curr_timeout_job = 1, 0, 0
+                    self.curr_job_size, self.curr_completed_job, self.curr_fault_job = 1, 0, 0
                     self.submit_button.configure(state='normal')
 
                 if status is self._sentinel:
@@ -349,9 +349,9 @@ class FtpAppView(ctk.CTk):
                     self.curr_job_size = status['job_size']
                     continue
                 # time out logic
-                if 'timeout' in status:
+                if 'fault' in status:
                     # add to timeout counter
-                    self.curr_timeout_job += 1
+                    self.curr_fault_job += 1
                     continue
 
                 self.curr_completed_job += 1

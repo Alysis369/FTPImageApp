@@ -39,6 +39,10 @@ class FtpAppController:
         """
         print(f'executing job {repr(job)}')
 
+        # data validation for homepath
+        if not job.home_dir:
+            raise AttributeError("Home_dir not specified")
+
         # Execute db calls
         ptdb_query = FtpAppController.generate_ptdb_query(job)
         imgdb_query = FtpAppController.generate_imgdb_query(job)
