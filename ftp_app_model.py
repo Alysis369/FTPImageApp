@@ -100,18 +100,20 @@ class FtpAppModel:
     @_ptdb_query_decorator
     def run_ptdb_query(self, conn: sa_engine, **kwargs) -> pd.DataFrame:
         query = kwargs['query']
+        result = kwargs['results']
 
-        data = pd.read_sql_query(query, conn)
+        result.append(pd.read_sql_query(query, conn))
 
-        return data
+        return result
 
     @_imgdb_query_decorator
     def run_imgdb_query(self, conn: sa_engine, **kwargs) -> pd.DataFrame:
         query = kwargs['query']
+        result = kwargs['results']
 
-        data = pd.read_sql_query(query, conn)
+        result.append(pd.read_sql_query(query, conn))
 
-        return data
+        return result
 
     def download_ftp_image(self, homepath: str, imgpath: str):
         filepath = imgpath.split('/')

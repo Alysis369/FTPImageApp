@@ -1,3 +1,5 @@
+import threading
+
 from job import Job
 
 
@@ -22,12 +24,18 @@ class FtpAppController:
         # Execute db calls
         ptdb_query = FtpAppController.generate_ptdb_query(job)
         imgdb_query = FtpAppController.generate_imgdb_query(job)
-        ptdb_results = self.model.run_ptdb_query(query=ptdb_query)
-        imgdb_results = self.model.run_imgdb_query(query=imgdb_query)
+        ptdb_results, imgdb_results = [], []
+
+        ptdb_thread = threading.Thread(target=self.model.run_ptdb_query, kwargs={'query': ptdb_query, 'results': ptdb_results})
+        imgdb_thread = threading.Thread(target=self.model.run_imgdb_query, kwargs={'query': imgdb_query, 'results': imgdb_results})
+        ptdb_thread.start()
+        imgdb_thread.start()
+        ptdb_thread.join()
+        imgdb_thread.join()
 
         # combine files together
-        txid_list = list(ptdb_results['Txid'])
-        imgpath_list = list(imgdb_results['ImgPath'])
+        txid_list = list(ptdb_results[0]['Txid'])
+        imgpath_list = list(imgdb_results[0]['ImgPath'])
 
         # compare the two different files
         target_imgpath_list = []

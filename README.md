@@ -46,7 +46,7 @@ FTP server, saving images to a user-specified directory.
 - Anaconda
 - Prerequisite python libraries
 
-###### Presrequisite Python Libraries
+###### Prerequisite Python Libraries
 
 Prerequisite libraries contained in *requirements.txt.* Recommended environment creation through anaconda:
 
@@ -115,6 +115,7 @@ Characters (*referred in the app as Equipment*) includes:
 - 3/10: Established test db/ftp server, connected eq selection to DB
 - 3/11: Finished first draft of fully working App
 - 3/15: Handled DB/FTP connection timeout on startup, FTP connection during pull
+- 3/15: Added threading to DB calls, increase speed in prod
 
 -----
 
@@ -125,7 +126,7 @@ Characters (*referred in the app as Equipment*) includes:
 
 ##### Dev Changes
 
-- Use threading to execute db calls to both db, prod might be slow and IO bound
+- ~~Use threading to execute db calls to both db, prod might be slow and IO bound~~ *Updated 3/15*
 - ImgPath list and txid list comparison is O(N*M)
     - possible for chunking and multiprocessing?
     - after every cross check, add job to queue instead of processing whole list, figure out how to determine job size
