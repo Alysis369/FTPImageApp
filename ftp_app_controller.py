@@ -1,7 +1,25 @@
 import threading
-
+from pymysql import OperationalError
 from job import Job
 
+class dbThread(threading.Thread):
+    def __init__(self, target, query, results):
+        super().__init__()
+        self.target = target
+        self.query = query
+        self.results = results
+
+    def run(self):
+        self.exc = None
+        try:
+            self.target(query=self.query, results=self.results)
+        except Exception as e:
+            self.exc = e
+
+    def join(self, *args):
+        super().join(*args)
+        if self.exc:
+            raise ConnectionError(self.exc)
 
 class FtpAppController:
     VERSION = 0.0
@@ -26,8 +44,8 @@ class FtpAppController:
         imgdb_query = FtpAppController.generate_imgdb_query(job)
         ptdb_results, imgdb_results = [], []
 
-        ptdb_thread = threading.Thread(target=self.model.run_ptdb_query, kwargs={'query': ptdb_query, 'results': ptdb_results})
-        imgdb_thread = threading.Thread(target=self.model.run_imgdb_query, kwargs={'query': imgdb_query, 'results': imgdb_results})
+        ptdb_thread = dbThread(self.model.run_ptdb_query, ptdb_query, ptdb_results)
+        imgdb_thread = dbThread(self.model.run_imgdb_query, imgdb_query, imgdb_results)
         ptdb_thread.start()
         imgdb_thread.start()
         ptdb_thread.join()

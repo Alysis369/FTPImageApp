@@ -114,7 +114,7 @@ Characters (*referred in the app as Equipment*) includes:
 - 3/8: Created MySQL container and tables
 - 3/10: Established test db/ftp server, connected eq selection to DB
 - 3/11: Finished first draft of fully working App
-- 3/15: Handled DB/FTP connection timeout on startup, FTP connection during pull
+- 3/15: Handled DB/FTP connection timeout on startup, DB/FTP connection during pull
 - 3/15: Added threading to DB calls, increase speed in prod
 
 -----
@@ -124,6 +124,9 @@ Characters (*referred in the app as Equipment*) includes:
 ##### Known Bugs
 - Connection to DB stalls on launched, but paused DB container
 
+##### Learning Lessons
+- Create custom DB thread per thread, easier to handle
+
 ##### Dev Changes
 
 - ~~Use threading to execute db calls to both db, prod might be slow and IO bound~~ *Updated 3/15*
@@ -132,7 +135,7 @@ Characters (*referred in the app as Equipment*) includes:
     - after every cross check, add job to queue instead of processing whole list, figure out how to determine job size
 - Add feature for ALL images, and add support for VV images
 - FTP requires spawning a different connection for each img download.. 
-- Check connection upon application startup, displays warning and exits gracefully.
+- ~~Check connection upon application startup, displays warning and exits gracefully.~~ *Updated 3/15*
 
 ##### Prod Changes
 - Add reject_code support to GUI 

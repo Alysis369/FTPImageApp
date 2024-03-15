@@ -6,7 +6,6 @@ import threading
 import traceback as tb
 from CTkMessagebox import CTkMessagebox
 
-
 class Main:
     VERSION = 0.0
     VIEW = FtpAppView
@@ -110,6 +109,10 @@ class Main:
 
             except queue.Empty:
                 continue
+            except ConnectionError:
+                status_q.put(
+                    {'status': f'DB connection TIMEOUT by {threading.current_thread().name}', 'timeout': True})
+                img_q.put({'sentinel': job['sentinel']})
 
     def _img_worker_main(self, status_q: queue.Queue, img_q: queue.Queue):
         """ main job for img worker """
