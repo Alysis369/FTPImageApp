@@ -61,7 +61,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# flask stuff:
 instance/
 .webassets-cache
 
@@ -239,3 +239,5 @@ fabric.properties
 # my files
 example_ctk.py
 example_ctk_complex.py
+Test
+DB/imgdb_data/ca-key.pem

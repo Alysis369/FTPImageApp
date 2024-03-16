@@ -1,0 +1,32 @@
+services:
+  pt-db:
+    container_name: ptdb
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+    volumes:
+      - "./ptdb_data:/var/lib/mysql"
+    ports:
+      - "3306:3306"
+  img-db:
+    container_name: imgdb
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+    volumes:
+      - "./imgdb_data:/var/lib/mysql"
+    ports:
+      - "3307:3306"
+  img-ftp:
+    container_name: imgftp
+    environment:
+      - FTP_PASS=pass
+      - FTP_USER=user
+    image: garethflowers/ftp-server
+    ports:
+      - '20-21:20-21/tcp'
+      - '40000-40009:40000-40009/tcp'
+    volumes:
+      - './imgftp_data:/home/user'
+
+
