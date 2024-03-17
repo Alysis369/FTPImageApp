@@ -1,6 +1,7 @@
 # FTP_image_app
 
 An demo version application to pull images from an FTP server implementation.
+Repo is geared towards development used. Prod use will be compiled through PyInstaller.
 
 ------
 
@@ -43,15 +44,14 @@ FTP server, saving images to a user-specified directory.
 
 ### Prerequisite
 - Docker 
-- Anaconda
 - Prerequisite python libraries
 
 ###### Prerequisite Python Libraries
 
-Prerequisite libraries contained in *requirements.txt.* Recommended environment creation through anaconda:
+Prerequisite libraries contained in *requirements.txt.* 
 
 ```commandline
-conda create --name ftp_image_app --file requirements.txt
+pip install -r requirements.txt
 ```
 
 ------
